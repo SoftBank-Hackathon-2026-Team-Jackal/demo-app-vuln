@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations: {}
+  name: chat-db
+  namespace: chat-source
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat-db
+  serviceName: chat-db
+  template:
+    metadata:
+      labels:
+        app: chat-db
+    spec:
+      containers:
+      - args:
+        - -c
+        - wal_level=logical
+        - -c
+        - max_replication_slots=10
+        - -c
+        - max_wal_senders=10
+        - -c
+        - app.node_name=pg-aws
+        env:
+        - name: POSTGRES_DB
+          value: chat
+        - name: POSTGRES_USER
+          value: chat
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: DB_PASSWORD
+              name: chat-secrets
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        image: postgres:16
+        name: postgres
+        ports:
+        - containerPort: 5432
+          name: postgres
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - chat
+            - -d
+            - chat
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources:
+          limits:
+            cpu: 500m
+            memory: 1Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: cmp-demo-gp3

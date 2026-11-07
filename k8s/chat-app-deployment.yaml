@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations: {}
+  name: chat-app
+  namespace: chat-source
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chat-app
+  template:
+    metadata:
+      labels:
+        app: chat-app
+    spec:
+      containers:
+      - env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: DATABASE_URL
+              name: chat-secrets
+        envFrom:
+        - configMapRef:
+            name: chat-app-config
+        image: 714066696240.dkr.ecr.ap-northeast-2.amazonaws.com/cmp-demo-chat@sha256:3098f6be5a3e480400a782db0c0cfda16cb6af5fe000f95d4daa94489745fd7c
+        name: app
+        ports:
+        - containerPort: 8080
+          name: http
+        readinessProbe:
+          failureThreshold: 1
+          httpGet:
+            path: /healthz
+            port: http
+          periodSeconds: 2
+        resources:
+          limits:
+            cpu: 250m
+            memory: 256Mi
+          requests:
+            cpu: 250m
+            memory: 256Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: true
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 20

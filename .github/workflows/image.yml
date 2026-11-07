@@ -1,0 +1,33 @@
+# main에 push하면 멀티 아키텍처 이미지를 GHCR에 올린다.
+# 모든 환경(env-a, env-b, 온프레미스)이 같은 digest를 pull하도록, 이전 과정에서는 다시 빌드하지 않는다.
+name: image
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: ko-build/setup-ko@v0.10
+      - name: go vet
+        run: go vet ./...
+      - name: ko build
+        env:
+          KO_DOCKER_REPO: ghcr.io/${{ github.repository_owner }}/demo-app
+        run: |
+          # GHCR 경로는 소문자여야 한다
+          export KO_DOCKER_REPO="$(echo "$KO_DOCKER_REPO" | tr '[:upper:]' '[:lower:]')"
+          ko build --bare --tags "latest,${GITHUB_SHA::12}" --image-refs image-refs.txt .
+          echo "### Image" >> "$GITHUB_STEP_SUMMARY"
+          sed 's/^/- `/; s/$/`/' image-refs.txt >> "$GITHUB_STEP_SUMMARY"

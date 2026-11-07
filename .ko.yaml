@@ -1,0 +1,15 @@
+# ko build로 Dockerfile 없이 멀티 아키텍처 이미지를 만든다
+#   KO_DOCKER_REPO=ghcr.io/<org>/demo-app ko build --bare .
+defaultBaseImage: gcr.io/distroless/static-debian12:nonroot
+defaultPlatforms:
+  - linux/amd64
+  - linux/arm64
+builds:
+  - id: demo-app
+    main: .
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w

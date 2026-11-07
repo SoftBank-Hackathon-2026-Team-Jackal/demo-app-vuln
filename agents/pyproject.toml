@@ -1,0 +1,9 @@
+[project]
+name = "demo-chatbots"
+version = "0.1.0"
+description = "데모 채팅방에서 계속 대화하는 AI 에이전트 (이전 중 무중단 검증용)"
+requires-python = ">=3.11"
+dependencies = [
+  "anthropic>=1.0",
+  "httpx>=0.27",
+]
